@@ -129,15 +129,25 @@ class Task extends Component {
 class TodoList extends Component {
   constructor() {
     super();
+
+    // Загружаем данные из localStorage или используем дефолтные
+    const savedTasks = localStorage.getItem('todoTasks');
+    const savedNextId = localStorage.getItem('todoNextId');
+
     this.state = {
-      tasks: [
+      tasks: savedTasks ? JSON.parse(savedTasks) : [
         { id: 1, text: "Сделать домашку", completed: false },
         { id: 2, text: "Сделать практику", completed: false },
         { id: 3, text: "Пойти домой", completed: false },
       ],
       inputValue: "",
-      nextId: 4,
+      nextId: savedNextId ? parseInt(savedNextId) : 4,
     };
+  }
+
+  saveToLocalStorage() {
+    localStorage.setItem('todoTasks', JSON.stringify(this.state.tasks));
+    localStorage.setItem('todoNextId', this.state.nextId.toString());
   }
 
   onAddInputChange = (e) => {
@@ -153,6 +163,7 @@ class TodoList extends Component {
       completed: false,
     });
     this.state.inputValue = "";
+    this.saveToLocalStorage();
     this.update();
   };
 
@@ -160,12 +171,14 @@ class TodoList extends Component {
     const task = this.state.tasks.find((t) => t.id === id);
     if (task) {
       task.completed = !task.completed;
+      this.saveToLocalStorage();
       this.update();
     }
   };
 
   onDeleteTask = (id) => {
     this.state.tasks = this.state.tasks.filter((t) => t.id !== id);
+    this.saveToLocalStorage();
     this.update();
   };
 
