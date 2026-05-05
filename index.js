@@ -44,19 +44,15 @@ class Component {
   }
 
   update() {
-    // Сохраняем старые дочерние компоненты
     const oldChildren = this._childComponents;
     this._childComponents = [];
 
     const newNode = this.render();
 
-    // Пытаемся переиспользовать старые компоненты
     this._childComponents.forEach((newChild, index) => {
       const oldChild = oldChildren[index];
       if (oldChild && oldChild.constructor === newChild.constructor) {
-        // Обновляем props старого компонента
         Object.assign(oldChild, newChild);
-        // Заменяем новый компонент на старый (с сохраненным state)
         this._childComponents[index] = oldChild;
         oldChild.update();
       }
@@ -152,7 +148,6 @@ class TodoList extends Component {
   constructor() {
     super();
 
-    // Загружаем данные из localStorage или используем дефолтные
     const savedTasks = localStorage.getItem('todoTasks');
     const savedNextId = localStorage.getItem('todoNextId');
 
