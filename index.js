@@ -46,18 +46,37 @@ class Component {
   update() {
     const oldChildren = this._childComponents;
     this._childComponents = [];
-
+    
+    // Рендерим новую структуру (это заполнит _childComponents новыми компонентами)
     const newNode = this.render();
-
-    this._childComponents.forEach((newChild, index) => {
-      const oldChild = oldChildren[index];
-      if (oldChild && oldChild.constructor === newChild.constructor) {
-        Object.assign(oldChild, newChild);
-        this._childComponents[index] = oldChild;
-        oldChild.update();
+    
+    // Теперь пытаемся заменить новые компоненты на старые (с сохраненным state)
+    this._childComponents = this._childComponents.map((newChild) => {
+      if (newChild instanceof Task) {
+        // Ищем старый Task с таким же task.id
+        const oldChild = oldChildren.find(
+          (old) => old instanceof Task && old.task.id === newChild.task.id
+        );
+        if (oldChild) {
+          // Обновляем props старого компонента
+          oldChild.task = newChild.task;
+          oldChild.onToggle = newChild.onToggle;
+          oldChild.onDelete = newChild.onDelete;
+          return oldChild;
+        }
+      } else if (newChild instanceof AddTask) {
+        // Для AddTask тоже переиспользуем
+        const oldChild = oldChildren.find((old) => old instanceof AddTask);
+        if (oldChild) {
+          oldChild.onAddTask = newChild.onAddTask;
+          oldChild.onInputChange = newChild.onInputChange;
+          oldChild.inputValue = newChild.inputValue;
+          return oldChild;
+        }
       }
+      return newChild;
     });
-
+    
     this._domNode.replaceWith(newNode);
     this._domNode = newNode;
   }
@@ -120,10 +139,9 @@ class Task extends Component {
     return createElement("li", {}, [
       createElement(
           "input",
-          {
-            type: "checkbox",
-            checked: this.task.completed ? "checked" : null,
-          },
+          this.task.completed 
+            ? { type: "checkbox", checked: "checked" }
+            : { type: "checkbox" },
           null,
           { change: this.onToggle }
       ),
@@ -134,9 +152,9 @@ class Task extends Component {
       ),
       createElement(
           "button",
-          {
-            class: this.state.deleteConfirmation ? "delete-confirm" : "",
-          },
+          this.state.deleteConfirmation 
+            ? { class: "delete-confirm" }
+            : {},
           "🗑️",
           { click: this.onDeleteClick }
       ),
