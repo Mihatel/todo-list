@@ -46,26 +46,21 @@ class Component {
   update() {
     const oldChildren = this._childComponents;
     this._childComponents = [];
-    
-    // Рендерим новую структуру (это заполнит _childComponents новыми компонентами)
+
     const newNode = this.render();
-    
-    // Теперь пытаемся заменить новые компоненты на старые (с сохраненным state)
+
     this._childComponents = this._childComponents.map((newChild) => {
       if (newChild instanceof Task) {
-        // Ищем старый Task с таким же task.id
         const oldChild = oldChildren.find(
           (old) => old instanceof Task && old.task.id === newChild.task.id
         );
         if (oldChild) {
-          // Обновляем props старого компонента
           oldChild.task = newChild.task;
           oldChild.onToggle = newChild.onToggle;
           oldChild.onDelete = newChild.onDelete;
           return oldChild;
         }
       } else if (newChild instanceof AddTask) {
-        // Для AddTask тоже переиспользуем
         const oldChild = oldChildren.find((old) => old instanceof AddTask);
         if (oldChild) {
           oldChild.onAddTask = newChild.onAddTask;
