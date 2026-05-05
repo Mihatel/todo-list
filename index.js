@@ -19,12 +19,16 @@
         element.appendChild(document.createTextNode(child));
       } else if (child instanceof HTMLElement) {
         element.appendChild(child);
+      } else if (child instanceof Component) {
+        element.appendChild(child.getDomNode());
       }
     });
   } else if (typeof children === "string") {
     element.appendChild(document.createTextNode(children));
   } else if (children instanceof HTMLElement) {
     element.appendChild(children);
+  } else if (children instanceof Component) {
+    element.appendChild(children.getDomNode());
   }
 
   return element;
@@ -43,6 +47,82 @@ class Component {
     const newNode = this.render();
     this._domNode.replaceWith(newNode);
     this._domNode = newNode;
+  }
+}
+
+class AddTask extends Component {
+  constructor(onAddTask, onInputChange, inputValue) {
+    super();
+    this.onAddTask = onAddTask;
+    this.onInputChange = onInputChange;
+    this.inputValue = inputValue;
+  }
+
+  render() {
+    return createElement("div", { class: "add-todo" }, [
+      createElement(
+          "input",
+          {
+            id: "new-todo",
+            type: "text",
+            placeholder: "Задание",
+            value: this.inputValue,
+          },
+          null,
+          { input: this.onInputChange }
+      ),
+      createElement("button", { id: "add-btn" }, "+", {
+        click: this.onAddTask,
+      }),
+    ]);
+  }
+}
+
+class Task extends Component {
+  constructor(task, onToggle, onDelete) {
+    super();
+    this.task = task;
+    this.onToggle = onToggle;
+    this.onDelete = onDelete;
+    this.state = {
+      deleteConfirmation: false,
+    };
+  }
+
+  onDeleteClick = () => {
+    if (!this.state.deleteConfirmation) {
+      this.state.deleteConfirmation = true;
+      this.update();
+    } else {
+      this.onDelete();
+    }
+  };
+
+  render() {
+    return createElement("li", {}, [
+      createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: this.task.completed ? "checked" : null,
+          },
+          null,
+          { change: this.onToggle }
+      ),
+      createElement(
+          "label",
+          { class: this.task.completed ? "completed" : "" },
+          this.task.text
+      ),
+      createElement(
+          "button",
+          {
+            class: this.state.deleteConfirmation ? "delete-confirm" : "",
+          },
+          "🗑️",
+          { click: this.onDeleteClick }
+      ),
+    ]);
   }
 }
 
@@ -92,42 +172,21 @@ class TodoList extends Component {
   render() {
     return createElement("div", { class: "todo-list" }, [
       createElement("h1", {}, "TODO List"),
-      createElement("div", { class: "add-todo" }, [
-        createElement(
-            "input",
-            {
-              id: "new-todo",
-              type: "text",
-              placeholder: "Задание",
-              value: this.state.inputValue,
-            },
-            null,
-            { input: this.onAddInputChange }
-        ),
-        createElement("button", { id: "add-btn" }, "+", {
-          click: this.onAddTask,
-        }),
-      ]),
+      new AddTask(
+          this.onAddTask,
+          this.onAddInputChange,
+          this.state.inputValue
+      ),
       createElement(
           "ul",
           { id: "todos" },
-          this.state.tasks.map((task) =>
-              createElement("li", {}, [
-                createElement(
-                    "input",
-                    { type: "checkbox", checked: task.completed ? "checked" : null },
-                    null,
-                    { change: () => this.onToggleTask(task.id) }
-                ),
-                createElement(
-                    "label",
-                    { class: task.completed ? "completed" : "" },
-                    task.text
-                ),
-                createElement("button", {}, "🗑️", {
-                  click: () => this.onDeleteTask(task.id),
-                }),
-              ])
+          this.state.tasks.map(
+              (task) =>
+                  new Task(
+                      task,
+                      () => this.onToggleTask(task.id),
+                      () => this.onDeleteTask(task.id)
+                  )
           )
       ),
     ]);
