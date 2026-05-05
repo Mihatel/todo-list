@@ -33,9 +33,9 @@
 
   return element;
 }
-
 class Component {
   constructor() {
+    this._childComponents = [];
   }
 
   getDomNode() {
@@ -44,9 +44,31 @@ class Component {
   }
 
   update() {
+    // Сохраняем старые дочерние компоненты
+    const oldChildren = this._childComponents;
+    this._childComponents = [];
+
     const newNode = this.render();
+
+    // Пытаемся переиспользовать старые компоненты
+    this._childComponents.forEach((newChild, index) => {
+      const oldChild = oldChildren[index];
+      if (oldChild && oldChild.constructor === newChild.constructor) {
+        // Обновляем props старого компонента
+        Object.assign(oldChild, newChild);
+        // Заменяем новый компонент на старый (с сохраненным state)
+        this._childComponents[index] = oldChild;
+        oldChild.update();
+      }
+    });
+
     this._domNode.replaceWith(newNode);
     this._domNode = newNode;
+  }
+
+  _registerChild(component) {
+    this._childComponents.push(component);
+    return component;
   }
 }
 
@@ -185,20 +207,24 @@ class TodoList extends Component {
   render() {
     return createElement("div", { class: "todo-list" }, [
       createElement("h1", {}, "TODO List"),
-      new AddTask(
-          this.onAddTask,
-          this.onAddInputChange,
-          this.state.inputValue
+      this._registerChild(
+          new AddTask(
+              this.onAddTask,
+              this.onAddInputChange,
+              this.state.inputValue
+          )
       ),
       createElement(
           "ul",
           { id: "todos" },
           this.state.tasks.map(
               (task) =>
-                  new Task(
-                      task,
-                      () => this.onToggleTask(task.id),
-                      () => this.onDeleteTask(task.id)
+                  this._registerChild(
+                      new Task(
+                          task,
+                          () => this.onToggleTask(task.id),
+                          () => this.onDeleteTask(task.id)
+                      )
                   )
           )
       ),
